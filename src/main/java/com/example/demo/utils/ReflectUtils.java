@@ -9,20 +9,27 @@ import java.lang.reflect.Type;
 @Slf4j
 public class ReflectUtils extends ReflectionUtils {
 
+    private static ReflectUtils utils = new ReflectUtils();
+
+    private ReflectUtils(){
+
+    }
+    public static ReflectUtils getInstance() {
+        return utils;
+    }
     /**
-     * 获取超类的泛型参数
-     * @param tClass
+     * 获取超类的泛型参数类型
+     * @param genericSuperclass 直接超类
      * @param ind
      * @param <T>
      * @return
      */
-    public static  <T> Class<T> getClass(Class<?> tClass, int ind) {
-        Type genericSuperclass = tClass.getClass().getGenericSuperclass();
+    public static  <T> Class<T> getClass(Type genericSuperclass, int ind) {
         if(genericSuperclass instanceof ParameterizedType) {
             ParameterizedType type = (ParameterizedType)genericSuperclass;
             Type[] args = type.getActualTypeArguments();
             Type arg = args[ind];
-            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ args[]:" + arg);
+            log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ args[{}]:value:{}", ind, arg);
             return (Class<T>) arg;
         }
         return null;
