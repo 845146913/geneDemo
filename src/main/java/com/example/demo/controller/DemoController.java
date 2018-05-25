@@ -1,17 +1,19 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.DemoDTO;
 import com.example.demo.model.Demo;
 import com.example.demo.service.IDemoService;
 import com.example.demo.support.controller.GenericController;
-import com.example.demo.support.service.GenericService;
 import com.example.demo.support.service.IGenericService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
 @RestController
-public class DemoController extends GenericController<Demo, Integer>{
+@RequestMapping(DemoController.PATH)
+public class DemoController extends GenericController<Demo, Integer, DemoDTO, DemoDTO, DemoDTO>{
 
     public final static String PATH = "/demo";
 
