@@ -1,10 +1,12 @@
 package com.example.demo.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+@Slf4j
 public class ReflectUtils extends ReflectionUtils {
 
     /**
@@ -20,9 +22,8 @@ public class ReflectUtils extends ReflectionUtils {
             ParameterizedType type = (ParameterizedType)genericSuperclass;
             Type[] args = type.getActualTypeArguments();
             Type arg = args[ind];
-            if(null != arg && arg instanceof ParameterizedType) {
-                return (Class<T>) arg;
-            }
+            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ args[]:" + arg);
+            return (Class<T>) arg;
         }
         return null;
     }
