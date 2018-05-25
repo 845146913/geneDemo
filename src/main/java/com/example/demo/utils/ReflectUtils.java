@@ -15,11 +15,14 @@ public class ReflectUtils extends ReflectionUtils {
      * @return
      */
     public static  <T> Class<T> getClass(Class<?> tClass, int ind) {
-        ParameterizedType type = (ParameterizedType)tClass.getClass().getGenericSuperclass();
-        Type[] args = type.getActualTypeArguments();
-        Type arg = args[ind];
-        if(null != arg && arg instanceof ParameterizedType) {
-            return (Class<T>) arg;
+        Type genericSuperclass = tClass.getClass().getGenericSuperclass();
+        if(genericSuperclass instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType)genericSuperclass;
+            Type[] args = type.getActualTypeArguments();
+            Type arg = args[ind];
+            if(null != arg && arg instanceof ParameterizedType) {
+                return (Class<T>) arg;
+            }
         }
         return null;
     }
