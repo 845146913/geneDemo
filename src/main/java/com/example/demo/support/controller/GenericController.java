@@ -6,30 +6,70 @@ import com.example.demo.support.service.IGenericService;
 import com.example.demo.utils.ReflectUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import java.awt.print.Pageable;
+import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Function;
 
+@Slf4j
 public abstract class GenericController<E extends GenericEntity<PK>, PK extends Serializable, DTO extends GenericDTO<PK>,
         CDTO extends GenericDTO<PK>, UDTO extends GenericDTO<PK>> {
 
     private Class<DTO> dtoClass;
     private Class<CDTO> cdtoClass;
     private Class<UDTO> udtoClass;
+
     // 映射路径
     private String path;
     protected abstract IGenericService<E, PK> getService();
+
+    /**
+     * java类的初始化顺序是
+     * 1.执行构造函数(里面有变量从上而下执行)
+     * 2.如果加了@PostConstruct注解，后初始化
+     * @param path
+     */
     public GenericController(String path) {
         this.path = path;
-        this.dtoClass = ReflectUtils.getClass(GenericController.class, 2);
-        this.cdtoClass = ReflectUtils.getClass(GenericController.class, 3);
-        this.udtoClass = ReflectUtils.getClass(GenericController.class, 4);
+        test();
+        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ utils:{}", reflectUtils);
+        Type genericSuperclass = this.getClass().getGenericSuperclass();
+        this.dtoClass = reflectUtils.getClass(genericSuperclass,2);
+        this.cdtoClass = reflectUtils.getClass(genericSuperclass,3);
+        this.udtoClass = reflectUtils.getClass(genericSuperclass,4);
+    }
+    private ReflectUtils reflectUtils = ReflectUtils.getInstance();
+
+    @PostConstruct
+    private void init() {
+        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ init Controller: utils:{}", ReflectUtils.getInstance());
+    }
+    /**
+     * 获取超类的泛型参数
+     * @param ind
+     * @param <T>
+     * @return
+     */
+    private  <T> Class<T> getClass(int ind) {
+        Type genericSuperclass = this.getClass().getGenericSuperclass();
+        if(genericSuperclass instanceof ParameterizedType) {
+            ParameterizedType type = (ParameterizedType)genericSuperclass;
+            Type[] args = type.getActualTypeArguments();
+            Type arg = args[ind];
+            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ args[{}]: {}", ind, arg);
+            return (Class<T>) arg;
+        }
+        return null;
+    }
+    private void test() {
+        int i = 0;
+        log.info("@@@@@@@@@@@@@@@@@@@@@@@@ test method:{}", i);
     }
 
     @GetMapping("/list")
