@@ -2,11 +2,14 @@ package com.example.demo.support.controller;
 
 import com.example.demo.support.dto.GenericDTO;
 import com.example.demo.support.entity.GenericEntity;
+import com.example.demo.support.res.page.Order;
+import com.example.demo.support.res.page.PageRequest;
 import com.example.demo.support.service.IGenericService;
 import com.example.demo.utils.ReflectUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -15,6 +18,7 @@ import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 @Slf4j
@@ -73,11 +77,25 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
     }
 
     @GetMapping("/list")
-    protected PageInfo<E> findAll(PageInfo pageable) throws Exception {
-        int pageNum = (pageable == null) ? 1 : pageable.getPageNum();
-        int pageSize = (pageable == null) ? 15 : pageable.getPageSize();
+    protected PageInfo<E> findAll(PageRequest pageRequest, DTO dto) throws Exception {
+        int pageNum = pageRequest.getPageNum() == null ? 1 : pageRequest.getPageNum();
+        int pageSize = pageRequest.getPageSize() == null ? 20 : pageRequest.getPageSize();
 
         PageHelper.startPage(pageNum, pageSize);
+
+        String order = pageRequest.getOrder(); // asc OR desc
+        String sort = pageRequest.getSort();  // 排序
+        if(StringUtils.isEmpty(sort)) {
+            pageRequest.setOpenSort(false);
+        } else {
+            pageRequest.setOpenSort(true);
+            pageRequest.setAsc(Objects.equals(Order.ASC.value(), order) ? true : false);
+        }
+        if (pageRequest.isOpenSort()) {
+            PageHelper.orderBy(sort + " " + order);
+        }
+
+        log.debug("@@@@@@@@@@@@@@@@@@@@@@ dto :{} \n pageRequest:{}", dto, pageRequest);
         PageInfo<E> result = new PageInfo<>(getService().findAll());
         return result;
     }
