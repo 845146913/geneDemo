@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.PostConstruct;
 import java.io.Serializable;
@@ -26,6 +27,7 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
         CDTO extends GenericDTO<PK>, UDTO extends GenericDTO<PK>> {
 
     private Class<DTO> dtoClass;
+    private Class<E> eClass;
     private Class<CDTO> cdtoClass;
     private Class<UDTO> udtoClass;
 
@@ -44,6 +46,7 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
         test();
         log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ utils:{}", reflectUtils);
         Type genericSuperclass = this.getClass().getGenericSuperclass();
+        this.eClass = reflectUtils.getClass(genericSuperclass,0);
         this.dtoClass = reflectUtils.getClass(genericSuperclass,2);
         this.cdtoClass = reflectUtils.getClass(genericSuperclass,3);
         this.udtoClass = reflectUtils.getClass(genericSuperclass,4);
@@ -94,9 +97,12 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
         if (pageRequest.isOpenSort()) {
             PageHelper.orderBy(sort + " " + order);
         }
+        Example example = new Example(eClass);
+        Example.Criteria criteria = example.createCriteria();
+        criteria.andEqualTo("id",dto.getId()); // TODO 动态查询参数及条件拼装
 
         log.debug("@@@@@@@@@@@@@@@@@@@@@@ dto :{} \n pageRequest:{}", dto, pageRequest);
-        PageInfo<E> result = new PageInfo<>(getService().findAll());
+        PageInfo<E> result = new PageInfo<>(getService().findByExample(example));
         return result;
     }
 
