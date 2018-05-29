@@ -2,28 +2,38 @@ package com.example.demo.support.controller;
 
 import com.example.demo.support.dto.GenericDTO;
 import com.example.demo.support.entity.GenericEntity;
+import com.example.demo.support.exception.BusinessException;
+import com.example.demo.support.res.ResponseResult;
 import com.example.demo.support.res.page.Order;
 import com.example.demo.support.res.page.PageRequest;
 import com.example.demo.support.res.search.DynamicSpecifications;
 import com.example.demo.support.res.search.SearchFilter;
 import com.example.demo.support.service.IGenericService;
+import com.example.demo.utils.BeanMapper;
 import com.example.demo.utils.ReflectUtils;
+import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.annotation.*;
 import tk.mybatis.mapper.entity.Example;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class GenericController<E extends GenericEntity<PK>, PK extends Serializable, DTO extends GenericDTO<PK>,
@@ -46,8 +56,7 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
      */
     public GenericController(String path) {
         this.path = path;
-        test();
-        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ utils:{}", reflectUtils);
+        log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ utils:{}", reflectUtils);
         Type genericSuperclass = this.getClass().getGenericSuperclass();
         this.eClass = reflectUtils.getClass(genericSuperclass,0);
         this.dtoClass = reflectUtils.getClass(genericSuperclass,2);
@@ -58,32 +67,18 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
 
     @PostConstruct
     private void init() {
-        log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ init Controller: utils:{}", ReflectUtils.getInstance());
-    }
-    /**
-     * 获取超类的泛型参数
-     * @param ind
-     * @param <T>
-     * @return
-     */
-    private  <T> Class<T> getClass(int ind) {
-        Type genericSuperclass = this.getClass().getGenericSuperclass();
-        if(genericSuperclass instanceof ParameterizedType) {
-            ParameterizedType type = (ParameterizedType)genericSuperclass;
-            Type[] args = type.getActualTypeArguments();
-            Type arg = args[ind];
-            log.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ args[{}]: {}", ind, arg);
-            return (Class<T>) arg;
-        }
-        return null;
-    }
-    private void test() {
-        int i = 0;
-        log.info("@@@@@@@@@@@@@@@@@@@@@@@@ test method:{}", i);
+        log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ init Controller: utils:{}", ReflectUtils.getInstance());
     }
 
-    @GetMapping("/list")
-    protected PageInfo<E> findAll(PageRequest pageRequest, Map<String, Object> params) throws Exception {
+    /**
+     * 列表
+     * @param pageRequest
+     * @param request
+     * @return
+     * @throws Exception
+     */
+    @RequestMapping("/list")
+    protected PageInfo<E> list(PageRequest pageRequest, HttpServletRequest request) throws Exception {
         int pageNum = pageRequest.getPageNum() == null ? 1 : pageRequest.getPageNum();
         int pageSize = pageRequest.getPageSize() == null ? 20 : pageRequest.getPageSize();
 
@@ -101,39 +96,77 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
             PageHelper.orderBy(sort + " " + order);
         }
         // TODO 动态查询参数及条件拼装
-        Example example = DynamicSpecifications.bySearchFilter(eClass, SearchFilter.parse(params).values());
+        List<SearchFilter> filters = SearchFilter.parse(request);
+        preList(pageRequest, request, filters);
+        Example example = DynamicSpecifications.bySearchFilter(eClass, filters);
 
-        log.debug("@@@@@@@@@@@@@@@@@@@@@@ params :{} \n pageRequest:{} \n exam:{}", params, pageRequest, example);
+        log.debug("@@@@@@@@@@@@@@@@@@@@@@ params :{} \n pageRequest:{}", SearchFilter.parse(request), pageRequest);
         PageInfo<E> result = new PageInfo<>(getService().findByExample(example));
         return result;
     }
 
-    protected void preList(List<E> list, PageInfo pageable) throws Exception {
+    protected void preList(PageRequest pageRequest, HttpServletRequest request, Collection<SearchFilter> filters) throws Exception {
 
     }
 
     @GetMapping(value = "/find/{id}")
     protected DTO find(@PathVariable("id") PK id) throws Exception {
         DTO dto = dtoClass.newInstance();
-        prefind(dto, id);
         E entity = getService().findById(id);
-        Function<E, DTO> copy = (en) -> {
-            try {
-                DTO d = dtoClass.newInstance();
-                return d;
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-            return null;
-        };
-        DTO apply = copy.apply(entity);
-
+        BeanUtils.copyProperties(entity, dto);
+        postfind(dto, id);
         return dto;
     }
 
-    protected void prefind(DTO dto, PK id) throws Exception {
+    protected void postfind(DTO dto, PK id) throws Exception {
 
     }
+
+    @PostMapping("/create")
+    protected ResponseResult<Object> create(@Valid CDTO dto, BindingResult bindingResult, HttpServletRequest request) throws Exception {
+        if(bindingResult.hasErrors()) {
+            List<FieldError> allErrors = bindingResult.getFieldErrors();
+            allErrors.forEach( error -> {
+                log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@2 create model has error:{} :  {}",  error.getField(),  error.getDefaultMessage());
+                throw new BusinessException(error.getDefaultMessage());
+            });
+        }
+        E e = eClass.newInstance();
+        postSave(dto, bindingResult);
+        BeanUtils.copyProperties(dto, e);
+        e = getService().save(e);
+        return e == null ?ResponseResult.error("新增失败"): ResponseResult.ok(e, "新增成功");
+    }
+
+    protected void postSave(CDTO dto, BindingResult bindingResult) throws Exception{
+
+    }
+
+    @PostMapping("/update/{id}")
+    protected ResponseResult<Object> update(@Valid UDTO dto, BindingResult bindingResult, HttpServletRequest request) throws Exception {
+        if(bindingResult.hasErrors()) {
+            List<FieldError> allErrors = bindingResult.getFieldErrors();
+            allErrors.forEach( error -> {
+                log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@2 update model has error:{} :  {}",  error.getField(),  error.getDefaultMessage());
+                throw new BusinessException(error.getDefaultMessage());
+            });
+        }
+        E e = eClass.newInstance();
+        postUpdate(dto, bindingResult);
+        BeanUtils.copyProperties(dto, e);
+        e = getService().update(e);
+        return e == null ?ResponseResult.error("修改失败"): ResponseResult.ok(e, "修改成功");
+    }
+
+    protected  void postUpdate(UDTO dto, BindingResult bindingResult) throws Exception{
+
+    }
+
+    @PostMapping("/batchdel")
+    protected ResponseResult<Object> delete(@RequestParam("ids") List<String> ids, HttpServletRequest request) throws Exception{
+        String idStr = ids.stream().collect(Collectors.joining(","));
+        return getService().delete(idStr) > 0 ? ResponseResult.ok(null, "删除成功!") :ResponseResult.error("删除失败!");
+    }
+
+
 }

@@ -74,4 +74,15 @@ public abstract class GenericService<E extends GenericEntity<PK>, PK  extends Se
         });
         return result;
     }
+
+    @Override
+    public E update(E e) {
+        return getRepository().updateByPrimaryKey(e) > 0 ? e : null;
+    }
+
+    @Override
+    public int delete(String ids) {
+        int i = getRepository().deleteByIds(ids);
+        return i;
+    }
 }

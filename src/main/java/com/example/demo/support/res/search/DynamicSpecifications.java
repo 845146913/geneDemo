@@ -16,23 +16,30 @@ public class DynamicSpecifications {
             Object value = searchFilter.value;
             switch (operator) {
                 case EQ:
-                    criteria.andEqualTo(fieldName, value);
+                    criteria.andEqualTo(fieldName, value);break;
                 case IN:
-                    criteria.andIn(fieldName, Arrays.asList(value));
+                    criteria.andIn(fieldName, Arrays.asList(value));break;
                 case NEQ:
-                    criteria.andNotEqualTo(fieldName, value);
+                    criteria.andNotEqualTo(fieldName, value);break;
                 case GT:
-                    criteria.andGreaterThan(fieldName, value);
+                    criteria.andGreaterThan(fieldName, value);break;
                 case LT:
-                    criteria.andLessThan(fieldName, value);
+                    criteria.andLessThan(fieldName, value);break;
                 case GTE:
-                    criteria.andGreaterThanOrEqualTo(fieldName, value);
+                    criteria.andGreaterThanOrEqualTo(fieldName, value);break;
                 case LTE:
-                    criteria.andLessThanOrEqualTo(fieldName, value);
+                    criteria.andLessThanOrEqualTo(fieldName, value);break;
                 case NIN:
-                    criteria.andNotIn(fieldName, Arrays.asList(value));
+                    criteria.andNotIn(fieldName, Arrays.asList(value));break;
                 case LIKE:
-                    criteria.andLike(fieldName, "%" + value + "%");
+                    criteria.andLike(fieldName, "%" + value + "%");break;
+                case ALIKE:
+                    criteria.andLike(fieldName, value + "%");break;
+                case PLIKE:
+                    criteria.andLike(fieldName, "%" + value);break;
+
+                default:
+                    break;
             }
         });
         return example;

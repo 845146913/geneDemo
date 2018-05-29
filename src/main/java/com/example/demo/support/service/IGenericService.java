@@ -17,4 +17,8 @@ public interface IGenericService<E extends GenericEntity<PK>, PK extends Seriali
     E save(E entity);
 
     <S extends E> List<S> batchSave(Iterable<S> entities);
+
+    E update(E e);
+
+    int delete(String ids);
 }
