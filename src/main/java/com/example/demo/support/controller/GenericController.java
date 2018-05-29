@@ -4,6 +4,8 @@ import com.example.demo.support.dto.GenericDTO;
 import com.example.demo.support.entity.GenericEntity;
 import com.example.demo.support.res.page.Order;
 import com.example.demo.support.res.page.PageRequest;
+import com.example.demo.support.res.search.DynamicSpecifications;
+import com.example.demo.support.res.search.SearchFilter;
 import com.example.demo.support.service.IGenericService;
 import com.example.demo.utils.ReflectUtils;
 import com.github.pagehelper.PageHelper;
@@ -19,6 +21,7 @@ import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -80,7 +83,7 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
     }
 
     @GetMapping("/list")
-    protected PageInfo<E> findAll(PageRequest pageRequest, DTO dto) throws Exception {
+    protected PageInfo<E> findAll(PageRequest pageRequest, Map<String, Object> params) throws Exception {
         int pageNum = pageRequest.getPageNum() == null ? 1 : pageRequest.getPageNum();
         int pageSize = pageRequest.getPageSize() == null ? 20 : pageRequest.getPageSize();
 
@@ -97,11 +100,10 @@ public abstract class GenericController<E extends GenericEntity<PK>, PK extends 
         if (pageRequest.isOpenSort()) {
             PageHelper.orderBy(sort + " " + order);
         }
-        Example example = new Example(eClass);
-        Example.Criteria criteria = example.createCriteria();
-        criteria.andEqualTo("id",dto.getId()); // TODO 动态查询参数及条件拼装
+        // TODO 动态查询参数及条件拼装
+        Example example = DynamicSpecifications.bySearchFilter(eClass, SearchFilter.parse(params).values());
 
-        log.debug("@@@@@@@@@@@@@@@@@@@@@@ dto :{} \n pageRequest:{}", dto, pageRequest);
+        log.debug("@@@@@@@@@@@@@@@@@@@@@@ params :{} \n pageRequest:{} \n exam:{}", params, pageRequest, example);
         PageInfo<E> result = new PageInfo<>(getService().findByExample(example));
         return result;
     }
