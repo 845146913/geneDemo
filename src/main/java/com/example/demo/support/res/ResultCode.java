@@ -2,7 +2,7 @@ package com.example.demo.support.res;
 
 import com.example.demo.support.enumeration.GenericEnum;
 
-public enum ResultCode implements GenericEnum<ResultCode>{
+public enum ResultCode implements GenericEnum<ResultCode, Integer>{
     OK(0),
     ERROR(100);
     private int value;
@@ -11,7 +11,7 @@ public enum ResultCode implements GenericEnum<ResultCode>{
     }
 
     @Override
-    public Object value() {
+    public Integer value() {
         return value;
     }
 }

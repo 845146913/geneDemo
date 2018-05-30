@@ -2,7 +2,7 @@ package com.example.demo.support.res.page;
 
 import com.example.demo.support.enumeration.GenericEnum;
 
-public enum Order implements GenericEnum<Order> {
+public enum Order implements GenericEnum<Order, String> {
     ASC("asc"),
     DESC("desc");
 
@@ -10,8 +10,10 @@ public enum Order implements GenericEnum<Order> {
     Order(String value) {
         this.value = value;
     }
+
+
     @Override
-    public Object value() {
+    public String value() {
         return value;
     }
 }
