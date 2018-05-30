@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.support.GenericRepository;
+import com.example.demo.support.repository.GenericRepository;
 import com.example.demo.support.dto.GenericDTO;
 import com.example.demo.support.service.GenericService;
 import com.example.demo.dto.DemoDTO;

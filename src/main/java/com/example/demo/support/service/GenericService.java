@@ -1,6 +1,6 @@
 package com.example.demo.support.service;
 
-import com.example.demo.support.GenericRepository;
+import com.example.demo.support.repository.GenericRepository;
 import com.example.demo.support.entity.GenericEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
