@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>摄像头拍照</title>
+</head>
+<body>
+<label for='videoSource'>选择摄像头: </label><p/>
+<select id='videoSource' onchange="changSource(this.id)" width="100%"></select><p/>
+<video id="video" autoplay="autoplay" controls></video>
+<div>
+    <button id="capture">拍照</button>
+</div>
+<canvas id="canvas" width="480" height="320"></canvas>
+<script>
+    var videoSelect = document.querySelector("select#videoSource");
+    //访问用户媒体设备的兼容方法
+    function getUserMedia(constraints, success, error) {
+        if (navigator.mediaDevices.getUserMedia) {
+            //最新的标准API
+            navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+        } else if (navigator.webkitGetUserMedia) {
+            //webkit核心浏览器
+            navigator.webkitGetUserMedia(constraints,success, error)
+        } else if (navigator.mozGetUserMedia) {
+            //firfox浏览器
+            navigator.mozGetUserMedia(constraints, success, error);
+        } else if (navigator.getUserMedia) {
+            //旧版API
+            navigator.getUserMedia(constraints, success, error);
+        }
+    }
+    //    navigator.getUserMedia = navigator.getUserMedia ||
+    //        navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let context = canvas.getContext('2d');
+
+    function success(stream) {
+        //兼容webkit核心浏览器
+        let CompatibleURL = window.URL || window.webkitURL;
+        //将视频流设置为video元素的源
+        console.log(stream);
+        try{
+            video.src = CompatibleURL.createObjectURL(stream);
+        }catch (e){
+            video.srcObject = stream;
+        }
+        video.play();
+    }
+
+    function error(error) {
+        console.log("访问用户媒体设备失败${error.name}, ${error.message}");
+    }
+
+    // 列出摄像头和麦克风
+    var exArray = [];
+    navigator.mediaDevices.enumerateDevices()
+        .then(function (devices) {
+            devices.forEach(function (device) {
+                console.log(device.kind + ": " + device.label +
+                    " id = " + device.deviceId);
+                if (device.kind == "videoinput") {
+                    var option = document.createElement("option");
+//                    alert(device.label);
+                    exArray.push(device.deviceId);
+                    option.text = device.label || 'camera ' + (videoSelect.length + 1);
+                    option.value = device.deviceId;
+                    videoSelect.appendChild(option);
+                }
+            });
+
+//            var mediaOpts = {video: {width: 420, height: 120}};
+            var mediaOpts =
+                {
+                    video:
+                        {
+                            deviceId: {exact: document.getElementById("videoSource").value}
+                        }
+                };
+            start(mediaOpts);
+        });
+    function changSource(id) {
+        var deviceId=document.getElementById(id).value;
+        var mediaOpts =
+            {
+                video:
+                    {
+                        deviceId: {exact: deviceId}
+                    }
+            };
+        start(mediaOpts);
+    }
+    function start(mediaOpts) {
+        if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+            //调用用户媒体设备, 访问摄像头
+//        getUserMedia({video : {width: 480, height: 320}}, success, error);
+//        getUserMedia({video : true}, success, error);
+//        getUserMedia({video : {option:[{sourceId:exArray[1]}]}}, success, error);
+            getUserMedia(mediaOpts, success, error);
+        } else {
+            alert('不支持访问用户媒体');
+        }
+    }
+
+    document.getElementById('capture').addEventListener('click', function () {
+        context.drawImage(video, 0, 0, 480, 320);
+    })
+</script>
+</body>
+</html>
